@@ -6,10 +6,12 @@ import numpy as np
 
 pandas2ri.activate()
 
+R_NULL = ro.rinterface.NULL
+
 
 def is_null_r(value) -> bool:
     """Checks if an R(py2) value is null."""
-    return value == ro.rinterface.NULL
+    return value == R_NULL
 
 
 def from_list_vector(list_vector: ListVector) -> dict:
@@ -33,11 +35,6 @@ def to_list_vector(value: dict) -> ListVector:
 def to_dataframe(value: dict) -> DataFrame:
     """Converts a Python dictionary to a DataFrame."""
     return DataFrame(value)
-
-
-def make_formula(formula: str) -> ro.Formula:
-    """Creates a formula object from a string."""
-    return ro.Formula(formula)
 
 
 def from_str_vector(str_vector: StrVector) -> str:
