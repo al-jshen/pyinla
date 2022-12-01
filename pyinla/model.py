@@ -1,4 +1,5 @@
 from typing import Optional
+from rpy2.robjects import globalenv
 from pyinla.convert import *
 from pyinla.utils import *
 import pandas as pd
@@ -12,9 +13,18 @@ def summary(result):
     print(base.summary(result))
 
 
+def register_data(data: dict):
+    """Register data in the global environment."""
+    with localconverter(Converter):
+        for k, v in data.items():
+            if isinstance(v, dict):
+                register_data(v)
+            globalenv[k] = convert_py2r(v)
+
+
 def inla(
     formula: str,
-    data: pd.DataFrame | dict,
+    data: dict,
     quantiles: np.ndarray = np.array([0.025, 0.5, 0.975]),
     control_compute: Optional[dict] = None,
     control_predictor: Optional[dict] = None,
@@ -41,10 +51,6 @@ def inla(
     safe: bool = True,
     debug: bool = False,
 ):
-    if isinstance(data, dict):
-        data = to_list_vector(data)
-    elif isinstance(data, pd.DataFrame):
-        data = to_dataframe(data)
 
     control_params = dict(
         control_compute=control_compute,
@@ -67,23 +73,15 @@ def inla(
     if n_trials is None:
         n_trials = R_NULL
 
-    return rinla.inla(
+    register_data(data)
+
+    result = rinla.inla(
         formula=ro.r(formula),
-        data=data,
+        data=convert_py2r(data),
         quantiles=quantiles,
         **control_params,
-        # control_compute=control_params["control_compute"],
-        # control_predictor=control_params["control_predictor"],
-        # control_family=control_params["control_family"],
-        # control_inla=control_params["control_inla"],
-        # control_fixed=control_params["control_fixed"],
-        # control_mode=control_params["control_mode"],
-        # control_expert=control_params["control_expert"],
-        # control_hazard=control_params["control_hazard"],
-        # control_lincomb=control_params["control_lincomb"],
-        # control_update=control_params["control_update"],
         family=family,
-        Ntrial=n_trials,
+        Ntrials=n_trials,
         verbose=verbose,
         only_hyperparam=only_hyperparam,
         inla_call=inla_call,
@@ -97,3 +95,5 @@ def inla(
         safe=safe,
         debug=debug,
     )
+
+    return result

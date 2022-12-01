@@ -1,17 +1,28 @@
 from rpy2 import robjects as ro
 from rpy2.robjects.vectors import ListVector, DataFrame, StrVector, BoolVector
-from rpy2.robjects import pandas2ri
+from rpy2.robjects import pandas2ri, numpy2ri, default_converter, globalenv
+from rpy2.robjects.conversion import localconverter
 import pandas as pd
 import numpy as np
-
-pandas2ri.activate()
+from copy import deepcopy
 
 R_NULL = ro.rinterface.NULL
+Converter = default_converter + numpy2ri.converter + pandas2ri.converter
+
+numpy2ri.activate()
+pandas2ri.activate()
 
 
 def is_null_r(value) -> bool:
     """Checks if an R(py2) value is null."""
     return value == R_NULL
+
+
+def pd_to_dict(df):
+    """
+    Convert a Pandas DataFrame to a dictionary
+    """
+    return {k: df[k].values for k in df.columns}
 
 
 def from_list_vector(list_vector: ListVector) -> dict:
@@ -32,8 +43,8 @@ def to_list_vector(value: dict) -> ListVector:
     return ListVector(value)
 
 
-def to_dataframe(value: dict) -> DataFrame:
-    """Converts a Python dictionary to a DataFrame."""
+def to_dataframe(value: dict | pd.DataFrame) -> DataFrame:
+    """Converts a Python dictionary or Pandas DataFrame to a DataFrame."""
     return DataFrame(value)
 
 
@@ -42,34 +53,71 @@ def from_str_vector(str_vector: StrVector) -> str:
     return str(str_vector)
 
 
+def to_str_vector(str: str) -> StrVector:
+    """Converts a str to a StrVector."""
+    return StrVector(str)
+
+
 def from_bool_vector(bool_vector: BoolVector) -> bool:
     """Converts a BoolVector to bool."""
     return bool(bool_vector)
 
 
-def autoconvert(value):
-    """Attempt to convert an R object to a Python object."""
-    if isinstance(value, ListVector):
-        names = value.names
-        if is_null_r(names):
-            return {}
-        return {key: autoconvert(value.rx2(key)) for key in value.names}
-    if isinstance(value, dict):
-        return {key: autoconvert(value[key]) for key in value}
-    if isinstance(value, list):
-        return [autoconvert(i) for i in value]
-    elif isinstance(value, DataFrame):
-        return from_dataframe(value)
-    elif isinstance(value, StrVector):
-        return from_str_vector(value)
-    elif isinstance(value, BoolVector):
-        return from_bool_vector(value)
-    elif isinstance(value, np.ndarray):
-        return value
-    elif is_null_r(value):
-        return None
+def to_bool_vector(value: bool) -> BoolVector:
+    """Converts a bool to a BoolVector."""
+    return BoolVector(value)
+
+
+def scalarize(x):
+    if not np.isscalar(x) and len(x) == 1:
+        return np.asscalar(x)
     else:
-        return value
+        return x
+
+
+def convert_r2py(ri):
+    """
+    Recursively convert rpy2 object to nested Python object.
+    Objects containing R code (typeof(x) == 'language') are filtered out.
+    Objects containing R lists with no string tags are converted to Python
+    lists.
+    """
+
+    if isinstance(ri, ListVector):
+        if ri.names == R_NULL:
+            result = [convert_r2py(tmp[1]) for tmp in ri.items()]
+        else:
+            result = {}
+            for name in ri.names:
+                globalenv["tmp"] = ri.rx2(name)
+                if ro.r("typeof(tmp)")[0] != "language":
+                    result[name] = convert_r2py(ri.rx2(name))
+        return result
+    else:
+        return scalarize(Converter.rpy2py(ri))
+
+
+def convert_py2r(obj):
+    """
+    Recursively convert rpy2 object to nested Python object.
+    Objects containing R code (typeof(x) == 'language') are filtered out.
+    Objects containing R lists with no string tags are converted to Python
+    lists.
+    """
+    o = deepcopy(obj)
+    if isinstance(o, pd.DataFrame):
+        o = pd_to_dict(o)
+    if isinstance(o, dict):
+        if o != {}:
+            for k, v in o.items():
+                o[k] = convert_py2r(v)
+        return ListVector(o)
+    else:
+        try:
+            return Converter.py2rpy(o)
+        except:
+            print(o)
+            raise
 
 
 def ravel_types(v):
