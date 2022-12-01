@@ -9,7 +9,7 @@ base.options(Ncpus=multiprocessing.cpu_count())
 Package = Any
 
 
-def install_inla(testing=True) -> None:
+def install_inla(testing=True, binary=False) -> None:
     """
     Installs INLA package and dependencies in R.
     """
@@ -25,6 +25,8 @@ def install_inla(testing=True) -> None:
             install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/{'testing' if testing else 'stable'}"), dep=TRUE)
             """
         )
+        if binary:
+            _ = robjects.r("inla.binary.install()")
         print("INLA installed")
     except Exception as e:
         print(e)
