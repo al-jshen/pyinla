@@ -1,4 +1,4 @@
-from rpy2 import robjects
+from rpy2 import robjects as ro
 from rpy2.robjects.packages import importr
 from typing import Any, Optional
 import multiprocessing
@@ -16,7 +16,7 @@ def install_inla(testing=True, binary=False) -> None:
     print("Make sure to install libgit2, gsl, gdal, udunits2, geos, and proj.")
     _ = input("Press enter to continue.")
     try:
-        _ = robjects.r(
+        _ = ro.r(
             f"""
             chooseCRANmirror(graphics=FALSE, ind=1)
             install.packages(c("Matrix", "foreach", "sp"))
@@ -26,7 +26,7 @@ def install_inla(testing=True, binary=False) -> None:
             """
         )
         if binary:
-            _ = robjects.r(
+            _ = ro.r(
                 """
                 library(INLA)
                 inla.binary.install()
