@@ -26,7 +26,12 @@ def install_inla(testing=True, binary=False) -> None:
             """
         )
         if binary:
-            _ = robjects.r("inla.binary.install()")
+            _ = robjects.r(
+                """
+                library(INLA)
+                inla.binary.install()
+                """
+            )
         print("INLA installed")
     except Exception as e:
         print(e)
