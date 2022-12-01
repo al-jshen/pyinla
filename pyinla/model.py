@@ -2,15 +2,15 @@ from typing import Optional
 from rpy2.robjects import globalenv
 from pyinla.convert import *
 from pyinla.utils import *
-import pandas as pd
 from multiprocessing import cpu_count
 
 rinla = load_inla()
 
 
-def summary(result):
-    """Print a summary of the results."""
-    print(base.summary(result))
+def summary(result: ListVector) -> str:
+    """Return a printable summary of the INLA results."""
+    rr = ListVector({k: v for k, v in result.items() if k != "call"})
+    return rinla.summary_inla(rr)
 
 
 def register_data(data: dict):

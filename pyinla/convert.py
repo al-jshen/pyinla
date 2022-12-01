@@ -70,7 +70,7 @@ def to_bool_vector(value: bool) -> BoolVector:
 
 def scalarize(x):
     if not np.isscalar(x) and len(x) == 1:
-        return np.asscalar(x)
+        return np.asarray(x).item()
     else:
         return x
 
@@ -82,7 +82,8 @@ def convert_r2py(ri):
     Objects containing R lists with no string tags are converted to Python
     lists.
     """
-
+    if isinstance(ri, np.ndarray):
+        return ri
     if isinstance(ri, ListVector):
         if ri.names == R_NULL:
             result = [convert_r2py(tmp[1]) for tmp in ri.items()]
@@ -94,6 +95,8 @@ def convert_r2py(ri):
                     result[name] = convert_r2py(ri.rx2(name))
         return result
     else:
+        if ri == R_NULL:
+            return None
         return scalarize(Converter.rpy2py(ri))
 
 
