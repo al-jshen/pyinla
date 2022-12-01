@@ -44,7 +44,7 @@ def set_pardiso_license(
     """
     assert path is not None or key is not None, "Either path or key must be provided."
     if path is not None:
-        inla.setOption("pardiso.license", path)
+        inla.inla_setOption("pardiso.license", path)
     if key is not None:
-        inla.setOption("pardiso.license", key)
-    inla.pardiso.check()
+        inla.inla_setOption("pardiso.license", key)
+    inla.inla_pardiso_check()
