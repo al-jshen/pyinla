@@ -25,7 +25,12 @@ def register_data(data: dict):
 def inla(
     formula: str,
     data: dict,
+    family: str = "gaussian",
     quantiles: np.ndarray = np.array([0.025, 0.5, 0.975]),
+    E: Optional[np.ndarray] = None,
+    scale: Optional[np.ndarray] = None,
+    weights: Optional[np.ndarray] = None,
+    n_trials: Optional[np.ndarray] = None,
     control_compute: Optional[dict] = None,
     control_predictor: Optional[dict] = None,
     control_family: Optional[dict] = None,
@@ -36,14 +41,12 @@ def inla(
     control_hazard: Optional[dict] = None,
     control_lincomb: Optional[dict] = None,
     control_update: Optional[dict] = None,
-    family: str = "gaussian",
-    n_trials: Optional[np.ndarray] = None,
+    control_lp_scale: Optional[dict] = None,
+    control_pardiso: Optional[dict] = None,
     verbose: bool = False,
     only_hyperparam: bool = False,
-    inla_call: str = rinla.inla_getOption("inla.call"),
-    inla_arg=rinla.inla_getOption("inla.arg"),
     num_threads: int = cpu_count(),
-    blas_num_threads: int = 0,
+    blas_num_threads: int = cpu_count(),
     keep: bool = False,
     working_directory: str = rinla.inla_getOption("working.directory"),
     silent: bool = True,
@@ -63,6 +66,8 @@ def inla(
         control_hazard=control_hazard,
         control_lincomb=control_lincomb,
         control_update=control_update,
+        control_lp_scale=control_lp_scale,
+        control_pardiso=control_pardiso,
     )
 
     for k in control_params.keys():
@@ -73,19 +78,29 @@ def inla(
     if n_trials is None:
         n_trials = R_NULL
 
+    if E is None:
+        E = R_NULL
+
+    if scale is None:
+        scale = R_NULL
+
+    if weights is None:
+        weights = R_NULL
+
     register_data(data)
 
     result = rinla.inla(
         formula=ro.r(formula),
         data=convert_py2r(data),
-        quantiles=quantiles,
-        **control_params,
         family=family,
+        quantiles=quantiles,
+        E=E,
+        scale=scale,
         Ntrials=n_trials,
+        weights=weights,
+        **control_params,
         verbose=verbose,
         only_hyperparam=only_hyperparam,
-        inla_call=inla_call,
-        inla_arg=inla_arg,
         num_threads=num_threads,
         blas_num_threads=blas_num_threads,
         keep=keep,
