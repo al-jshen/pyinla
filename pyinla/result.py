@@ -12,8 +12,16 @@ class MarginalType:
         self.marginal_type = marginal_type
         self.names = list(self.marginal_type.names)
 
-    def get_marginal(self, name):
-        return Marginals(self.marginal_type.rx2(name))
+    def list_marginals(self):
+        return self.names
+
+    def get_marginal(self, key: str | int):
+        if isinstance(key, int):
+            return Marginals(self.marginal_type.rx2(self.names[key]))
+        elif isinstance(key, str):
+            return Marginals(self.marginal_type.rx2(key))
+        else:
+            raise TypeError("key must be either int or str")
 
 
 def check_2d(f):
@@ -194,3 +202,7 @@ class Result:
             ps[k] = np.stack(ps[k])
 
         return ps
+
+    def improve_hyperpar(self):
+        self.result = rinla.inla_hyperpar(self.result)
+        return self
