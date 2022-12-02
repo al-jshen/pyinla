@@ -66,7 +66,7 @@ def marginal_expectation(marginal, fn):
     Calculate the expectation of the marginal distribution with respect to the function.
     The function should be a string that can be evaluated in R.
     """
-    return rinla.inla_emarginal(ro.r(fn), marginal)
+    return rinla.inla_emarginal(ro.r("function(x)" + fn), marginal)
 
 
 def marginal_transform(marginal, fn):
@@ -74,4 +74,4 @@ def marginal_transform(marginal, fn):
     Transform the marginal distribution with the function.
     The function should be a string that can be evaluated in R.
     """
-    return rinla.inla_tmarginal(ro.r(fn), marginal)
+    return rinla.inla_tmarginal(ro.r("function(x)" + fn), marginal)
