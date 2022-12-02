@@ -76,3 +76,10 @@ def marginal_transform(marginal, fn):
     The function should be a string that can be evaluated in R.
     """
     return rinla.inla_tmarginal(ro.r("function(x)" + fn), marginal)
+
+
+def marginal_ci(marginal, ci):
+    """
+    Return the values between which the confidence interval is contained.
+    """
+    return rinla.inla_hpdmarginal(ci, marginal).reshape(2)

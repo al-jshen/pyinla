@@ -25,6 +25,12 @@ class MarginalType:
         else:
             raise TypeError("key must be either int or str")
 
+    def apply(self, func, *args, **kwargs):
+        results = []
+        for m in range(len(self.names)):
+            results.append(func(self.get_marginal(m), *args, **kwargs))
+        return results
+
 
 def check_2d(f):
     @functools.wraps(f)
@@ -90,6 +96,13 @@ class Marginals(np.ndarray):
         Compute the quantile of the marginal distribution at quantiles q.
         """
         return marginal_quantile(self, q)
+
+    @check_2d
+    def ci(self, ci):
+        """
+        Compute the values within which the confidence interval is contained.
+        """
+        return marginal_ci(self, ci)
 
     @check_2d
     def sample(self, n):
