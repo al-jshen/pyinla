@@ -3,6 +3,7 @@ from rpy2.robjects import globalenv
 from pyinla.convert import *
 from pyinla.utils import *
 from multiprocessing import cpu_count
+from pyinla.result import Result
 
 rinla = load_inla()
 
@@ -53,7 +54,7 @@ def inla(
     inla_mode: str = rinla.inla_getOption("inla.mode"),
     safe: bool = True,
     debug: bool = False,
-):
+) -> Result:
 
     control_params = dict(
         control_compute=control_compute,
@@ -73,6 +74,12 @@ def inla(
     for k in control_params.keys():
         if control_params[k] is None:
             control_params[k] = {}
+        cpkk = set(control_params[k].keys())
+        for kk in cpkk:
+            if "_" in kk:
+                nk = kk.replace("_", ".")
+                control_params[k][nk] = control_params[k][kk]
+                del control_params[k][kk]
         control_params[k] = to_list_vector(control_params[k])
 
     if n_trials is None:
@@ -111,4 +118,4 @@ def inla(
         debug=debug,
     )
 
-    return result
+    return Result(result)
