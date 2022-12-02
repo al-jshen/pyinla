@@ -1,5 +1,5 @@
 from rpy2 import robjects as ro
-from rpy2.robjects.vectors import ListVector, DataFrame, StrVector, BoolVector
+from rpy2.robjects.vectors import ListVector, DataFrame, StrVector, BoolVector, Vector
 from rpy2.robjects import pandas2ri, numpy2ri, default_converter, globalenv
 from rpy2.robjects.conversion import localconverter
 import pandas as pd
@@ -95,9 +95,15 @@ def convert_r2py(ri):
                     result[name] = convert_r2py(ri.rx2(name))
         return result
     else:
+        if isinstance(ri, Vector) and len(ri) == 0:
+            return None
         if ri == R_NULL:
             return None
-        return scalarize(Converter.rpy2py(ri))
+        res = Converter.rpy2py(ri)
+        try:
+            return scalarize(res)
+        except TypeError:
+            return res
 
 
 def convert_py2r(obj):
