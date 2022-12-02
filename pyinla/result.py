@@ -1,10 +1,12 @@
-from rpy2.robjects.vectors import ListVector
-from pyinla.convert import R_NULL, convert_r2py
-from pyinla.model import summary
-from pyinla.marginals import *
-import numpy as np
-import matplotlib.pyplot as plt
 import functools
+
+import matplotlib.pyplot as plt
+import numpy as np
+from rpy2.robjects.vectors import ListVector
+
+from pyinla.convert import R_NULL, convert_r2py
+from pyinla.marginals import *
+from pyinla.utils import inla_summary
 
 
 class MarginalType:
@@ -144,7 +146,7 @@ class Result:
         self.names = list(self.result.names)
 
     def __repr__(self):
-        return str(summary(self.result))
+        return str(inla_summary(self.result))
 
     def __getitem__(self, key):
         return self.result.rx2(key)

@@ -1,10 +1,12 @@
-from rpy2 import robjects as ro
-from rpy2.robjects.vectors import ListVector, DataFrame, StrVector, BoolVector, Vector
-from rpy2.robjects import pandas2ri, numpy2ri, default_converter, globalenv
-from rpy2.robjects.conversion import localconverter
-import pandas as pd
-import numpy as np
 from copy import deepcopy
+
+import numpy as np
+import pandas as pd
+from rpy2 import robjects as ro
+from rpy2.robjects import default_converter, globalenv, numpy2ri, pandas2ri
+from rpy2.robjects.conversion import localconverter
+from rpy2.robjects.vectors import (BoolVector, DataFrame, ListVector,
+                                   StrVector, Vector)
 
 R_NULL = ro.rinterface.NULL
 Converter = default_converter + numpy2ri.converter + pandas2ri.converter

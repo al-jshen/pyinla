@@ -1,8 +1,9 @@
-from pyinla.model import rinla
 import numpy as np
 import pandas as pd
-from pyinla.convert import convert_r2py
 import rpy2.robjects as ro
+
+from pyinla.convert import convert_r2py
+from pyinla.utils import rinla
 
 
 def marginal_summary(marginal):

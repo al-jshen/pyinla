@@ -1,13 +1,21 @@
+import multiprocessing
+from typing import Any, Optional
+
 from rpy2 import robjects as ro
 from rpy2.robjects.packages import importr
-from typing import Any, Optional
-import multiprocessing
-import re
+from rpy2.robjects.vectors import ListVector
 
+rinla = importr("INLA")
 utils = importr("utils")
 base = importr("base")
 base.options(Ncpus=multiprocessing.cpu_count())
 Package = Any
+
+
+def inla_summary(result: ListVector) -> str:
+    """Return a printable summary of the INLA results."""
+    rr = ListVector({k: v for k, v in result.items() if k != "call"})
+    return rinla.summary_inla(rr)
 
 
 def install_inla(testing=True, binary=False) -> None:
@@ -37,11 +45,6 @@ def install_inla(testing=True, binary=False) -> None:
     except Exception as e:
         print(e)
         print("INLA is not installed. Please install it manually.")
-
-
-def load_inla() -> Package:
-    inla = importr("INLA")
-    return inla
 
 
 def set_pardiso_license(
