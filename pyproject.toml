@@ -6,10 +6,16 @@ authors = ["Jeff Shen <shenjeff@princeton.edu>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8,<3.11"
 rpy2 = "^3.5.6"
 numpy = "^1.23.5"
+matplotlib = "^3.6.2"
+pandas = "^1.5.2"
 
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^3.5.0"
+pears = "^0.1.4"
 
 [build-system]
 requires = ["poetry-core"]
