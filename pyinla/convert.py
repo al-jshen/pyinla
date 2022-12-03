@@ -2,12 +2,14 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
+import warnings
 from rpy2 import robjects as ro
 from rpy2 import rinterface as ri
 from rpy2.robjects import default_converter, globalenv, numpy2ri, pandas2ri
 from rpy2.robjects.vectors import BoolVector, DataFrame, ListVector, StrVector, Vector
 from rpy2.rinterface_lib import na_values
 from rpy2.robjects.numpy2ri import converter as numpy2ri_converter
+
 
 rpy2py = numpy2ri_converter.rpy2py
 
@@ -17,18 +19,22 @@ Converter = default_converter + numpy2ri.converter + pandas2ri.converter
 # hacky workaround to deal with NA from R
 @rpy2py.register(ri.IntSexpVector)
 def rpy2py_intvector(obj):
-    x = np.array(obj, dtype=int)
-    if np.any(x == -2147483648):
-        x = np.array(obj, dtype=float)
-        x[np.isclose(x, -2147483648)] = np.nan
-    return x
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        x = np.array(obj, dtype=int)
+        if np.any(x == -2147483648):
+            x = np.array(obj, dtype=float)
+            x[np.isclose(x, -2147483648)] = np.nan
+        return x
 
 
 @rpy2py.register(ri.FloatSexpVector)
 def rpy2py_floatvector(obj):
-    x = np.array(obj)
-    x[np.isclose(x, -2147483648)] = np.nan
-    return x
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        x = np.array(obj)
+        x[np.isclose(x, -2147483648)] = np.nan
+        return x
 
 
 numpy2ri.activate()
