@@ -2,6 +2,7 @@ from multiprocessing import cpu_count
 from typing import Optional
 
 from rpy2.robjects import globalenv
+from rpy2.robjects.conversion import localconverter
 
 from pyinla.convert import *
 from pyinla.result import Result
@@ -25,7 +26,7 @@ def inla(
     E: Optional[np.ndarray] = None,
     scale: Optional[np.ndarray] = None,
     weights: Optional[np.ndarray] = None,
-    n_trials: Optional[np.ndarray] = None,
+    n_trials: Optional[np.ndarray | str] = None,
     control_compute: Optional[dict] = None,
     control_predictor: Optional[dict] = None,
     control_family: Optional[dict] = None,
@@ -49,6 +50,8 @@ def inla(
     safe: bool = True,
     debug: bool = False,
 ) -> Result:
+
+    register_data(data)
 
     control_params = dict(
         control_compute=control_compute,
@@ -78,6 +81,11 @@ def inla(
 
     if n_trials is None:
         n_trials = R_NULL
+    elif isinstance(n_trials, str):
+        assert (
+            n_trials in data.keys()
+        ), "If n_trials is a string, it must be a key in `data`"
+        n_trials = ro.r(n_trials)
 
     if E is None:
         E = R_NULL
@@ -87,8 +95,6 @@ def inla(
 
     if weights is None:
         weights = R_NULL
-
-    register_data(data)
 
     result = rinla.inla(
         formula=ro.r(formula),
