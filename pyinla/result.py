@@ -177,24 +177,21 @@ class Result:
             return None
         return MarginalType(self.get("marginals." + kind))
 
-    def get_summary_type(self, kind):
+    def get_summary(self, kind):
         assert kind in self.suffixes, "kind must be one of {}".format(self.suffixes)
         st = self.result.rx2("summary." + kind)
         if st == R_NULL:
             return None
-        return self.get("summary." + kind)
+        return convert_r2py(self.get("summary." + kind))
 
     def list_marginal_types(self):
         return self.suffixes
 
-    def list_summary_types(self):
+    def list_summaries(self):
         return self.suffixes
 
     def list_marginals(self, kind):
         return convert_r2py(self.get_marginal_type(kind).names)
-
-    def list_summary(self, kind):
-        return convert_r2py(self.get_summary_type(kind).names)
 
     def sample_posterior(self, n: int):
         ps = dict(

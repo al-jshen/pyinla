@@ -174,3 +174,7 @@ def stack_data(stack):
 
 def stack_A(stack):
     return rinla.inla_stack_A(stack)
+
+
+def stack_index(stack, tag):
+    return rinla.inla_stack_index(stack, tag).rx2("data").astype(int)
