@@ -2,6 +2,8 @@
 
 INLA in Python
 
+**See [examples](examples).**
+
 ## Notes
 
 - inla.mesh.2d
