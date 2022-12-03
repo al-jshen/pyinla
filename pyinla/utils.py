@@ -7,6 +7,7 @@ from rpy2.robjects.vectors import ListVector
 
 rinla = importr("INLA")
 utils = importr("utils")
+stats = importr("stats")
 base = importr("base")
 base.options(Ncpus=multiprocessing.cpu_count())
 Package = Any
@@ -28,7 +29,7 @@ def install_inla(testing=True, binary=False) -> None:
         _ = ro.r(
             f"""
             chooseCRANmirror(graphics=FALSE, ind=1)
-            install.packages(c("Matrix", "foreach", "sp"))
+            install.packages(c("Matrix", "foreach", "sp", "rgdal", "geoR", "raster"))
             install.packages("BiocManager")
             BiocManager::install(c("graph", "Rgraphviz"), dep=TRUE)
             install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/{'testing' if testing else 'stable'}"), dep=TRUE)

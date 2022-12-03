@@ -3,13 +3,33 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 from rpy2 import robjects as ro
+from rpy2 import rinterface as ri
 from rpy2.robjects import default_converter, globalenv, numpy2ri, pandas2ri
-from rpy2.robjects.conversion import localconverter
-from rpy2.robjects.vectors import (BoolVector, DataFrame, ListVector,
-                                   StrVector, Vector)
+from rpy2.robjects.vectors import BoolVector, DataFrame, ListVector, StrVector, Vector
+from rpy2.rinterface_lib import na_values
+from rpy2.robjects.numpy2ri import converter as numpy2ri_converter
+
+rpy2py = numpy2ri_converter.rpy2py
 
 R_NULL = ro.rinterface.NULL
 Converter = default_converter + numpy2ri.converter + pandas2ri.converter
+
+# hacky workaround to deal with NA from R
+@rpy2py.register(ri.IntSexpVector)
+def rpy2py_intvector(obj):
+    x = np.array(obj, dtype=int)
+    if np.any(x == -2147483648):
+        x = np.array(obj, dtype=float)
+        x[np.isclose(x, -2147483648)] = np.nan
+    return x
+
+
+@rpy2py.register(ri.FloatSexpVector)
+def rpy2py_floatvector(obj):
+    x = np.array(obj)
+    x[np.isclose(x, -2147483648)] = np.nan
+    return x
+
 
 numpy2ri.activate()
 pandas2ri.activate()
@@ -18,6 +38,19 @@ pandas2ri.activate()
 def is_null_r(value) -> bool:
     """Checks if an R(py2) value is null."""
     return value == R_NULL
+
+
+df_rules = ro.default_converter
+
+
+@df_rules.rpy2py.register(ri.IntSexpVector)
+def to_int(obj):
+    return np.array([int(v) if v != na_values.NA_Integer else np.nan for v in obj])
+
+
+@df_rules.rpy2py.register(ri.FloatSexpVector)
+def to_float(obj):
+    return np.array([float(v) if v != na_values.NA_Real else np.nan for v in obj])
 
 
 def pd_to_dict(df):
@@ -115,20 +148,22 @@ def convert_py2r(obj):
     Objects containing R lists with no string tags are converted to Python
     lists.
     """
-    o = deepcopy(obj)
-    if isinstance(o, pd.DataFrame):
-        o = pd_to_dict(o)
-    if isinstance(o, dict):
-        if o != {}:
-            for k, v in o.items():
-                o[k] = convert_py2r(v)
-        return ListVector(o)
-    else:
-        try:
+    try:
+        o = deepcopy(obj)
+        if isinstance(o, pd.DataFrame):
+            o = pd_to_dict(o)
+        if isinstance(o, np.ndarray) and np.size(o) == 1 and o == np.nan:
+            return na_values.NA_Real
+        if isinstance(o, dict):
+            if o != {}:
+                for k, v in o.items():
+                    o[k] = convert_py2r(v)
+            return ListVector(o)
+        else:
             return Converter.py2rpy(o)
-        except:
-            print(o)
-            raise
+    except:
+        print(o)
+        raise
 
 
 def ravel_types(v):
