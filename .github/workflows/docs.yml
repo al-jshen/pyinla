@@ -11,24 +11,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ammaraskar/sphinx-action@master
+      - name: Build HTML
+        uses: ammaraskar/sphinx-action@master
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
         with:
-          docs-folder: "docs/"
-
-      - name: Commit changes to docs
-        run: |
-          git clone https://github.com/al-jshen/pyinla.git --branch gh-pages --single-branch gh-pages
-          cp -r docs/_build/html/* gh-pages/
-          cd gh-pages
-          touch .nojekyll
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "Update docs" -a || true
-
-      - name: Push docs to gh-pages
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          directory: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/html
