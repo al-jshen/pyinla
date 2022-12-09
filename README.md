@@ -2,7 +2,7 @@
 
 INLA in Python
 
-**See [examples](examples).**
+**See [examples](https://al-jshen.github.io/pyinla/).**
 
 ## Notes
 
