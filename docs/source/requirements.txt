@@ -1,0 +1,3 @@
+Sphinx
+sphinx-book-theme
+myst-nb
