@@ -1,19 +1,30 @@
 from rpy2.robjects.vectors import FloatVector
 from pyinla.utils import *
-from pyinla.convert import R_NULL, convert_py2r, df_rules
+from pyinla.convert import R_NULL, convert_py2r, df_rules, convert_r2py
 from rpy2.robjects.conversion import localconverter
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-class Mesh2D:
+class Mesh:
     def __init__(self, inla_mesh):
         self.mesh = inla_mesh
         self.n = self.mesh.rx2("n")
-        self.loc = self.mesh.rx2("loc")[:, :2]
+        self.degree = self.mesh.rx2("degree")
+        self.interval = self.mesh.rx2("interval")
+        self.loc = self.mesh.rx2("loc")
         self.points_idx = self.mesh.rx2("idx").rx2("loc")
+
+    def plot(self, ax: Optional[plt.Axes] = None, **kwargs):
+        pass
+
+
+class Mesh2D(Mesh):
+    def __init__(self, inla_mesh):
+        super().__init__(inla_mesh)
+        self.loc = self.mesh.rx2("loc")[:, :2]
 
     def plot(self, ax: Optional[plt.Axes] = None, **kwargs):
         if ax is None:
@@ -28,18 +39,21 @@ class Mesh2D:
 
 
 class SPDE2:
-    def __init__(self, inla_spde2):
+    def __init__(self, inla_spde2, mesh_dim: int):
         self.spde = inla_spde2
         self.n_spde = self.spde.rx2("n.spde")
         self.n_theta = self.spde.rx2("n.theta")
-        self.mesh = Mesh2D(self.spde.rx2("mesh"))
+        if mesh_dim == 1:
+            self.mesh = Mesh(self.spde.rx2("mesh"))
+        elif mesh_dim == 2:
+            self.mesh = Mesh2D(self.spde.rx2("mesh"))
 
     def make_index(self, name: str):
         return rinla.inla_spde_make_index(name, self.n_spde)
 
 
 def make_projection_matrix(
-    mesh: Mesh2D,
+    mesh: Mesh,
     loc: np.ndarray | pd.DataFrame,
 ):
     if isinstance(loc, pd.DataFrame):
@@ -57,8 +71,32 @@ def mesh_2d(
     return Mesh2D(rinla.inla_mesh_2d(loc=coords, max_edge=max_edge, cutoff=cutoff))
 
 
+def mesh_1d(
+    loc: np.ndarray,
+    interval: Optional[List[float]] = None,
+    boundary: Optional[str] = None,
+    degree: int = 1,
+):
+    assert degree in [0, 1, 2], "degree must be 0, 1, or 2"
+    if interval is None:
+        interval = np.array([np.min(loc), np.max(loc)])
+    if boundary is None:
+        boundary = R_NULL
+    else:
+        assert boundary in [
+            "neumann",
+            "dirichlet",
+            "free",
+            "cyclic",
+        ], "boundary must be one of: 'neumann', 'dirichlet', 'free', 'cyclic'"
+
+    return Mesh(
+        rinla.inla_mesh_1d(loc=loc, interval=interval, boundary=boundary, degree=degree)
+    )
+
+
 def spde2_pcmatern(
-    mesh: Mesh2D,
+    mesh: Mesh,
     prior_range: List[float] | float | int,
     prior_sigma: List[float] | float | int,
     alpha: float = 2,
@@ -85,6 +123,8 @@ def spde2_pcmatern(
             len(prior_range) == 2
         ), "prior_sigma must be a list of length 2 or a float"
 
+    mesh_dim = 2 if isinstance(mesh, Mesh2D) else 1
+
     return SPDE2(
         rinla.inla_spde2_pcmatern(
             mesh.mesh,
@@ -94,12 +134,13 @@ def spde2_pcmatern(
             n_iid_group=n_iid_group,
             prior_range=FloatVector(prior_range),
             prior_sigma=FloatVector(prior_sigma),
-        )
+        ),
+        mesh_dim,
     )
 
 
 def spde2_matern(
-    mesh: Mesh2D,
+    mesh: Mesh,
     alpha: float = 2,
     constr: bool = False,
     fractional_method: str = "parsimonious",
@@ -132,6 +173,8 @@ def spde2_matern(
     if theta_prior_mean is None:
         theta_prior_mean = R_NULL
 
+    mesh_dim = 2 if isinstance(mesh, Mesh2D) else 1
+
     return SPDE2(
         rinla.inla_spde2_matern(
             mesh.mesh,
@@ -147,16 +190,34 @@ def spde2_matern(
             theta_prior_mean=theta_prior_mean,
             theta_prior_prec=theta_prior_prec,
             n_iid_group=n_iid_group,
-        )
+        ),
+        mesh_dim,
     )
 
 
-def inla_stack(tag: str, data: dict, A: list, effects: dict, s: ListVector):
+def inla_stack(
+    tag: str,
+    data: dict,
+    A: ro.methods.RS4,
+    effects: dict,
+    index: Optional[ListVector] = None,
+):
+    if index is None:
+        if len(effects.keys()) == 0:
+            effects = base.list()
+        else:
+            effects = base.list(convert_py2r(effects))
+    else:
+        if len(effects.keys()) == 0:
+            effects = base.list(s=index)
+        else:
+            effects = base.list(convert_py2r(effects), s=index)
+    len_effects = base.length(effects)
     with localconverter(df_rules):
         return rinla.inla_stack(
             data=convert_py2r(data),
-            A=convert_py2r([1, A]),
-            effects=base.list(convert_py2r(effects), s=s),
+            A=convert_py2r([1] * int(len_effects - 1) + [A]),
+            effects=effects,
             tag=tag,
             compress=True,
         )
@@ -169,7 +230,8 @@ def combine_stacks(*stacks):
 
 def stack_data(stack):
     with localconverter(df_rules):
-        return rinla.inla_stack_data(stack)
+        stacked = rinla.inla_stack_data(stack)
+    return convert_r2py(stacked)
 
 
 def stack_A(stack):

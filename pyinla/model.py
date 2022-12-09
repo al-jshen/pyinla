@@ -6,6 +6,7 @@ from rpy2.robjects.conversion import localconverter
 
 from pyinla.convert import *
 from pyinla.result import Result
+from pyinla.spde import SPDE2
 from pyinla.utils import *
 
 
@@ -50,6 +51,10 @@ def inla(
     safe: bool = True,
     debug: bool = False,
 ) -> Result:
+
+    for k in data.keys():
+        if isinstance(data[k], SPDE2):
+            data[k] = data[k].spde
 
     register_data(data)
 
