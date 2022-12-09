@@ -1,4 +1,4 @@
-Sphinx
-sphinx-book-theme
-ipython
-myst-nb
+Sphinx==4.5.0
+sphinx-book-theme==0.3.3
+ipython!=8.7.0
+myst-nb==0.13.2
