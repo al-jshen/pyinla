@@ -12,7 +12,6 @@ numpy = "^1.23.5"
 matplotlib = "^3.6.2"
 pandas = "^1.5.2"
 
-
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "^3.5.0"
 pears = "^0.1.4"
@@ -21,3 +20,6 @@ black = "^22.10.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"

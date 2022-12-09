@@ -1,11 +1,14 @@
-from rpy2.robjects.vectors import FloatVector
-from pyinla.utils import *
-from pyinla.convert import R_NULL, convert_py2r, df_rules, convert_r2py
-from rpy2.robjects.conversion import localconverter
-from typing import List, Optional, Tuple
+from typing import List, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from rpy2.robjects.conversion import localconverter
+from rpy2.robjects.methods import RS4
+from rpy2.robjects.vectors import FloatVector, ListVector
+
+from pyinla.convert import R_NULL, convert_py2r, convert_r2py, df_rules
+from pyinla.utils import base, rinla
 
 
 class Mesh:
@@ -198,7 +201,7 @@ def spde2_matern(
 def inla_stack(
     tag: str,
     data: dict,
-    A: ro.methods.RS4,
+    A: RS4,
     effects: dict,
     index: Optional[ListVector] = None,
 ):

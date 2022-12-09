@@ -1,7 +1,9 @@
-from pyinla.utils import ro
-from rpy2.robjects.packages import importr
-from pyinla.convert import R_NULL
 from typing import Optional
+
+from rpy2.robjects.packages import importr
+
+from pyinla.convert import R_NULL
+from pyinla.utils import ro
 
 ro.r("library(raster)")
 libraster = importr("raster")
