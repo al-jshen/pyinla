@@ -1,0 +1,8 @@
+[flake8]
+select = B,B9,BLK,C,E,F,I,W,D
+max-complexity = 10
+max-line-length = 90
+ignore=W503,E501,BLK100,E731,C901,B008
+application-import-names = pyinla,tests
+docstring-convention = google
+exclude=__pycache__,.ipynb_checkpoints
