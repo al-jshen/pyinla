@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     # "sphinx_autodoc_typehints",
+    "IPython.sphinxext.ipython_console_highlighting",
     "myst_nb",
 ]
 

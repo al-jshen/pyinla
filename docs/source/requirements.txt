@@ -1,3 +1,4 @@
 Sphinx
 sphinx-book-theme
+ipython
 myst-nb
