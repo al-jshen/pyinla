@@ -14,7 +14,9 @@ Package = Any
 
 
 def inla_summary(result: ListVector) -> str:
-    """Return a printable summary of the INLA results."""
+    """
+    Return a printable summary of the INLA results.
+    """
     rr = ListVector({k: v for k, v in result.items() if k != "call"})
     return rinla.summary_inla(rr)
 
@@ -48,15 +50,13 @@ def install_inla(testing=True, binary=False) -> None:
         print("INLA is not installed. Please install it manually.")
 
 
-def set_pardiso_license(
-    inla: Package, path: Optional[str] = None, key: Optional[str] = None
-) -> None:
+def set_pardiso_license(path: Optional[str] = None, key: Optional[str] = None) -> None:
     """
     Set PARDISO license file path.
     """
     assert path is not None or key is not None, "Either path or key must be provided."
     if path is not None:
-        inla.inla_setOption("pardiso.license", path)
+        rinla.inla_setOption("pardiso.license", path)
     if key is not None:
-        inla.inla_setOption("pardiso.license", key)
-    inla.inla_pardiso_check()
+        rinla.inla_setOption("pardiso.license", key)
+    print(rinla.inla_pardiso_check())

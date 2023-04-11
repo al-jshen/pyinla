@@ -51,17 +51,50 @@ class SPDE2:
         elif mesh_dim == 2:
             self.mesh = Mesh2D(self.spde.rx2("mesh"))
 
-    def make_index(self, name: str):
-        return rinla.inla_spde_make_index(name, self.n_spde)
+    def make_index(self, name: str, n_group: int = 1, n_repl: int = 1):
+        return rinla.inla_spde_make_index(
+            name, self.n_spde, n_group=n_group, n_repl=n_repl
+        )
+
+
+def make_mesh_projector(
+    mesh: Mesh,
+    loc: Optional[np.ndarray] = None,
+    xlims: Optional[List[float]] = None,
+    ylims: Optional[List[float]] = None,
+    dims: Optional[List[float]] = None,
+):
+    if loc is None:
+        assert (
+            xlims is not None and ylims is not None and dims is not None
+        ), "if loc is none, must specify xlim, ylim, and dims"
+        return rinla.inla_mesh_projector(
+            mesh=mesh.mesh,
+            xlim=np.array(xlims),
+            ylim=np.array(ylims),
+            dims=np.array(dims),
+        )
+    else:
+        return rinla.inla_mesh_projector(mesh=mesh.mesh, loc=loc)
+
+
+def project_mesh(
+    projector: ListVector,
+    field: np.ndarray,
+):
+    return rinla.inla_mesh_project(projector, field)
 
 
 def make_projection_matrix(
     mesh: Mesh,
     loc: np.ndarray | pd.DataFrame,
+    group: Optional[np.ndarray] = None,
 ):
     if isinstance(loc, pd.DataFrame):
         loc = loc.values
-    return rinla.inla_spde_make_A(mesh=mesh.mesh, loc=loc)
+    if group is None:
+        group = R_NULL
+    return rinla.inla_spde_make_A(mesh=mesh.mesh, loc=loc, group=group)
 
 
 def mesh_2d(
@@ -71,6 +104,8 @@ def mesh_2d(
     x: longitude
     y: latitude
     """
+    if cutoff is None:
+        cutoff = R_NULL
     return Mesh2D(rinla.inla_mesh_2d(loc=coords, max_edge=max_edge, cutoff=cutoff))
 
 
@@ -107,6 +142,17 @@ def spde2_pcmatern(
     fractional_method: str = "parsimonious",
     n_iid_group: int = 1,
 ):
+    """
+    `prior_range` has values [range0 and Prange], such that the resulting prior has the property P(range < range0) = Prange.
+    For example, prior_range = [1, 0.05] means that the prior has 5% probability of being less than 1.
+    The user should choose which ranges are too short to be unfeasible for the problem.
+    As a heuristic, ranges that are smaller than the resolution of the mesh should be disfavoured.
+    Larger values of range0 will result in smoother functions.
+
+    `prior_sigma` has values [sigma0 and Psigma], such that the resulting prior has the property P(sigma > sigma0) = Psigma.
+    The user should choose what standard deviations are too large to be feasible for the problem.
+    It is probably better to err on the side of a larger sigma0 when unsure.
+    """
     assert fractional_method in [
         "parsimonious",
         "null",

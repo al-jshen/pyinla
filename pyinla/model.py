@@ -1,17 +1,20 @@
 from multiprocessing import cpu_count
 from typing import Optional
 
+import numpy as np
 from rpy2.robjects import globalenv
 from rpy2.robjects.conversion import localconverter
 
-from pyinla.convert import *
+from pyinla.convert import R_NULL, Converter, convert_py2r
 from pyinla.result import Result
 from pyinla.spde import SPDE2
-from pyinla.utils import *
+from pyinla.utils import rinla, ro
 
 
 def register_data(data: dict):
-    """Register data in the global environment."""
+    """
+    Register data in the global environment.
+    """
     with localconverter(Converter):
         for k, v in data.items():
             if isinstance(v, dict):
@@ -54,6 +57,7 @@ def inla(
 
     for k in data.keys():
         if isinstance(data[k], SPDE2):
+            print("Found SPDE.")
             data[k] = data[k].spde
 
     register_data(data)
@@ -82,7 +86,7 @@ def inla(
                 nk = kk.replace("_", ".")
                 control_params[k][nk] = control_params[k][kk]
                 del control_params[k][kk]
-        control_params[k] = to_list_vector(control_params[k])
+        control_params[k] = convert_py2r(control_params[k])
 
     if n_trials is None:
         n_trials = R_NULL

@@ -1,12 +1,25 @@
 import functools
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from rpy2.robjects.vectors import ListVector
 
 from pyinla.convert import R_NULL, convert_r2py
-from pyinla.marginals import *
-from pyinla.utils import inla_summary
+from pyinla.marginals import (
+    marginal_cdf,
+    marginal_ci,
+    marginal_expectation,
+    marginal_logpdf,
+    marginal_mode,
+    marginal_pdf,
+    marginal_quantile,
+    marginal_sample,
+    marginal_spline,
+    marginal_summary,
+    marginal_transform,
+)
+from pyinla.utils import inla_summary, rinla, ro
 
 
 class MarginalType:
@@ -113,16 +126,17 @@ class Marginals(np.ndarray):
 
     @check_2d
     def expectation(self, fn):
-        """
-        Calculate the expectation of the marginal distribution with respect to the function.
+        """Calculate the expectation of the marginal distribution with respect
+        to the function.
+
         The function should be a string that can be evaluated in R.
         """
         return marginal_expectation(self, fn)
 
     @check_2d
     def transform(self, fn):
-        """
-        Transform the marginal distribution with the function.
+        """Transform the marginal distribution with the function.
+
         The function should be a string that can be evaluated in R.
         """
         return Marginals(marginal_transform(self, fn))
@@ -130,16 +144,20 @@ class Marginals(np.ndarray):
     @check_2d
     def spline(self):
         """
-        Return an interpolated spline representation of the marginal distribution.
+        Return an interpolated spline representation of the marginal
+        distribution.
         """
         return Marginals(marginal_spline(self).T)
 
     @check_2d
-    def plot(self, **kwargs):
+    def plot(self, ax: Optional[plt.Axes] = None, **kwargs):
         """
         Plot the marginal distribution.
         """
-        plt.plot(self[:, 0], self[:, 1], **kwargs)
+        if ax is None:
+            ax = plt.gca()
+        ax.plot(self[:, 0], self[:, 1], **kwargs)
+        return ax
 
 
 class Result:
@@ -192,6 +210,15 @@ class Result:
 
     def list_marginals(self, kind):
         return convert_r2py(self.get_marginal_type(kind).names)
+
+    def list_names(self, kind):
+        smry = self.result.rx2("summary." + kind)
+        if smry == R_NULL:
+            return None
+        names = list(ro.r("row.names")(smry))
+        if names == R_NULL:
+            return None
+        return names
 
     def sample_posterior(self, n: int):
         ps = dict(
